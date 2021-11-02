@@ -1,9 +1,10 @@
-import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
+import { Link, useHistory } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { Map, TileLayer, Marker } from 'react-leaflet';
 import { LeafletEvent, LeafletMouseEvent } from 'leaflet'
 import api from '../../services/api';
+import Dropzone from '../../components/Dropzone';
 import logo from '../../assets/logo.svg';
 import './styles.css';
 
@@ -28,27 +29,31 @@ const CreateLocation: React.FC = () => {
 
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
+    const [selectedFile, setSelectedFile] = useState<File>();
+
+    const history = useHistory();
+
     useEffect(() => { 
         api.get('items').then(response => {
             setItems(response.data);
         })
     },[]);
 
-    function handleMapClick(event: LeafletMouseEvent): void {
+    const handleMapClick = useCallback((event: LeafletMouseEvent): void => {
         //console.log(event);
         setSelectedMapPosition([
             event.latlng.lat,
             event.latlng.lng,
         ]);
-    }
+    }, []);
 
-    function handleInputCHange(event: ChangeEvent<HTMLInputElement>){
+    const handleInputCHange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
         //console.log(event.target.name, event.target.value);
         const { name, value } = event.target;
         setFormData({...formData, [name]: value });
-    }
+    }, [formData]);
 
-    function handleSelectItem(id: number){
+    const handleSelectItem = useCallback((id: number) =>{
         //setSecletedItems([... selectedItems, id]);
         const alreadySelected = selectedItems.findIndex(item => item === id);
 
@@ -58,9 +63,9 @@ const CreateLocation: React.FC = () => {
         } else {
             setSelectedItems([... selectedItems, id]);
         }
-    }
+    }, [selectedItems]);
 
-    async function handleSubmit(event: FormEvent){
+    const handleSubmit = useCallback(async(event: FormEvent) =>{
         event.preventDefault();
 
         const {city, email, name, uf, whatsapp} = formData;
@@ -79,7 +84,11 @@ const CreateLocation: React.FC = () => {
         };
         
         await api.post('locations', data);
-    }
+
+        alert('Estabelecimento cadastrado com sucesso!');
+
+        history.push('/');
+    }, [formData, selectedItems, setSelectedMapPosition])
 
     return (
         <div id="page-create-location">
@@ -98,6 +107,8 @@ const CreateLocation: React.FC = () => {
                     <legend>
                         <h2>Dados</h2>
                     </legend>
+
+                    <Dropzone onFileUploaded={setSelectedFile} />
 
                     <div className="field">
                             <label htmlFor="name">Nome da entidade</label>
